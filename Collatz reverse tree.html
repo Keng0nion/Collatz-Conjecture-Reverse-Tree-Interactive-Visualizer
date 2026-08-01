@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Collatz Reverse Tree – Interactive Visualizer with (m,k) toggle & PNG export</title>
+    <!-- vis-network core library -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f7fb;
+            color: #1a2a3a;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+        .toolbar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid #dce4ec;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            z-index: 10;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f8fafc;
+            padding: 5px 15px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .control-group label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input[type="number"] {
+            width: 110px;
+            padding: 6px 10px;
+            font-size: 1rem;
+            border-radius: 30px;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            font-weight: bold;
+            background: white;
+        }
+        button {
+            background: #2c3e66;
+            border: none;
+            color: white;
+            padding: 6px 22px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            border: 1px solid #1e2a44;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover {
+            background: #1e2a44;
+            transform: scale(0.98);
+        }
+        .export-btn {
+            background: #2b6e4f;
+            border-color: #1e4a37;
+        }
+        .export-btn:hover {
+            background: #1e4a37;
+        }
+        .toggle-btn {
+            background: #6c5b7b;
+            border-color: #4b3a5e;
+        }
+        .toggle-btn:hover {
+            background: #4b3a5e;
+        }
+        .info-panel {
+            background: #fff9f0;
+            border-left: 4px solid #f39c12;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 12px;
+            max-width: 380px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            flex-shrink: 1;
+        }
+        .info-panel strong {
+            color: #e67e22;
+        }
+        .stats {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #eef2f7;
+            padding: 5px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        #network {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+        }
+        .legend {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.94);
+            backdrop-filter: blur(5px);
+            border-radius: 14px;
+            padding: 10px 16px;
+            font-size: 0.7rem;
+            border: 1px solid #ccc;
+            pointer-events: none;
+            z-index: 20;
+            font-family: 'Segoe UI', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            line-height: 1.5;
+            max-width: 280px;
+        }
+        .legend span {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .legend .mk-desc {
+            font-size: 0.65rem;
+            color: #2c3e66;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 6px;
+            padding-top: 5px;
+            font-family: monospace;
+        }
+        .status-msg {
+            font-size: 0.8rem;
+            color: #2c6e2c;
+            margin-left: 10px;
+            background: #ecfdf5;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .warning {
+            color: #e67e22;
+            font-weight: 500;
+        }
+        @media (max-width: 860px) {
+            .toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+            .control-group { justify-content: space-between; }
+            .info-panel { max-width: 100%; }
+            .stats { text-align: center; }
+            .legend { font-size: 0.6rem; max-width: 260px; padding: 8px 12px; }
+        }
+        .footer {
+            font-size: 0.7rem;
+            text-align: center;
+            background: #f0f2f5;
+            padding: 4px;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="toolbar">
+        <div class="control-group">
+            <label>🔢 Max steps (depth):</label>
+            <input type="number" id="stepInput" min="1" max="12" value="4" step="1" style="width: 100px;">
+            <button id="generateBtn">⟳ Generate / Refresh Tree</button>
+        </div>
+        <button id="toggleDisplayBtn" class="toggle-btn">🔄 Toggle (m,k) Coordinates</button>
+        <button id="exportPngBtn" class="export-btn">📸 Export HD PNG (Full View)</button>
+        <div class="info-panel" id="infoPanel">
+            📘 <strong>Collatz Reverse Tree</strong> · growing backwards from 1<br>
+            🟢 Click any node to show its path · Switch to (m,k) mode
+        </div>
+        <div class="stats" id="statsArea">
+            Nodes: — | Edges: —
+        </div>
+        <div id="statusMsg" class="status-msg">✅ Ready</div>
+    </div>
+    <div class="graph-container">
+        <div id="network"></div>
+        <div class="legend">
+            <div><span style="background: #3b82f6;"></span> Step 0 (root 1)</div>
+            <div><span style="background: #f97316;"></span> Step ≥4</div>
+            <div><span style="background: #a78bfa;"></span> Intermediate steps</div>
+            <div>🖱️ Scroll zoom · Drag pan · Click node</div>
+            <div>📸 Export PNG · 🔄 Coordinate mode</div>
+            <div class="mk-desc">
+                <strong>(m,k) conversion</strong><br>
+                m = ⌊n/6⌋ &nbsp;&nbsp; k = n mod 6<br>
+                → displayed as (m, k)
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        💡 Reverse rules: predecessors are 2x and (x‑1)/3 (if odd >1) | <span class="warning">⚠️ Depth ≥8 may produce >1500 nodes, export may be slow | Toggle (m,k): for any n, m = floor(n/6), k = n mod 6</span>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // Collatz reverse tree generator (BFS)
+    // Returns { nodes, edges, parentMap, stepsMap }
+    // --------------------------------------------------------------
+    function generateCollatzTree(maxSteps) {
+        let stepsMap = new Map();   // number -> step count from root 1
+        let parentMap = new Map();  // child -> parent
+        
+        if (maxSteps < 0) return { nodes: [], edges: [], parentMap, stepsMap };
+        
+        stepsMap.set(1, 0);
+        parentMap.set(1, null);
+        let queue = [1];
+        
+        while (queue.length > 0) {
+            let current = queue.shift();
+            let currentStep = stepsMap.get(current);
+            if (currentStep >= maxSteps) continue;
+            
+            let pred1 = 2 * current;
+            let pred2 = null;
+            if ((current - 1) % 3 === 0) {
+                let candidate = (current - 1) / 3;
+                if (candidate % 2 === 1 && candidate !== 1) {
+                    pred2 = candidate;
+                }
+            }
+            
+            [pred1, pred2].forEach(pred => {
+                if (pred === null) return;
+                if (!stepsMap.has(pred)) {
+                    stepsMap.set(pred, currentStep + 1);
+                    parentMap.set(pred, current);
+                    queue.push(pred);
+                } else if (stepsMap.get(pred) > currentStep + 1) {
+                    stepsMap.set(pred, currentStep + 1);
+                    parentMap.set(pred, current);
+                    queue.push(pred);
+                }
+            });
+        }
+        
+        let nodes = [];
+        let edges = [];
+        let nodeSet = new Set();
+        
+        for (let [nodeId, step] of stepsMap.entries()) {
+            if (step <= maxSteps) {
+                nodeSet.add(nodeId);
+            }
+        }
+        
+        for (let [child, parent] of parentMap.entries()) {
+            if (parent !== null && nodeSet.has(child) && nodeSet.has(parent)) {
+                if (stepsMap.get(child) <= maxSteps && stepsMap.get(parent) <= maxSteps) {
+                    edges.push({ from: parent, to: child });
+                }
+            }
+        }
+        
+        for (let nodeId of nodeSet) {
+            let step = stepsMap.get(nodeId);
+            let hue = 0.55 - (step / (maxSteps + 0.5)) * 0.45;
+            let saturation = 0.7;
+            let lightness = 0.55 + (step / (maxSteps + 1)) * 0.2;
+            let color = `hsl(${hue * 360}, ${saturation * 100}%, ${lightness * 100}%)`;
+            let size = 22 + Math.max(0, (maxSteps - step) * 1.2);
+            size = Math.min(34, size);
+            nodes.push({
+                id: nodeId,
+                label: nodeId.toString(),
+                title: `Number: ${nodeId}\nStep: ${step}\n(distance from 1)`,
+                step: step,
+                color: color,
+                size: size,
+                font: { size: 12, color: '#1e293b' }
+            });
+        }
+        
+        nodes.sort((a,b) => a.step - b.step);
+        return { nodes: nodes, edges: edges, parentMap: parentMap, stepsMap: stepsMap };
+    }
+    
+    // ---------- Helper: format number as (m,k) ----------
+    function formatNumberToMK(n) {
+        const m = Math.floor(n / 6);
+        const k = n % 6;
+        return `(${m},${k})`;
+    }
+    
+    // Global variables
+    let network = null;
+    let currentParentMap = null;
+    let currentStepsMap = null;
+    let currentMaxSteps = 4;
+    let currentNodesDataSet = null;
+    let currentDisplayMode = 'number'; // 'number' or 'mk'
+    let isExporting = false;
+    
+    // --------------------------------------------------------------
+    // Refresh node labels according to currentDisplayMode
+    // --------------------------------------------------------------
+    function refreshLabelsByMode() {
+        if (!currentNodesDataSet) {
+            console.warn("No nodesDataSet, cannot refresh labels");
+            return false;
+        }
+        try {
+            const nodesArray = currentNodesDataSet.get();
+            if (!nodesArray || nodesArray.length === 0) return false;
+            
+            const updates = [];
+            for (let node of nodesArray) {
+                const originalNumber = node.id;
+                let newLabel = '';
+                if (currentDisplayMode === 'number') {
+                    newLabel = originalNumber.toString();
+                } else {
+                    newLabel = formatNumberToMK(originalNumber);
+                }
+                if (node.label !== newLabel) {
+                    updates.push({ id: node.id, label: newLabel });
+                }
+            }
+            if (updates.length > 0) {
+                currentNodesDataSet.update(updates);
+            }
+            return true;
+        } catch (err) {
+            console.error("Failed to refresh labels:", err);
+            return false;
+        }
+    }
+    
+    // --------------------------------------------------------------
+    // Toggle display mode
+    // --------------------------------------------------------------
+    function toggleDisplayMode() {
+        if (!network || !currentNodesDataSet) {
+            showStatusMessage("❌ Tree not loaded, please generate first", true);
+            return;
+        }
+        
+        const toggleBtn = document.getElementById('toggleDisplayBtn');
+        if (currentDisplayMode === 'number') {
+            currentDisplayMode = 'mk';
+            if (toggleBtn) toggleBtn.innerHTML = '🔢 Show Numbers';
+            showStatusMessage("Switched to (m,k) coordinate display", false);
+        } else {
+            currentDisplayMode = 'number';
+            if (toggleBtn) toggleBtn.innerHTML = '🔄 Toggle (m,k) Coordinates';
+            showStatusMessage("Restored raw number display", false);
+        }
+        const success = refreshLabelsByMode();
+        if (!success) {
+            showStatusMessage("⚠️ Label refresh failed, please regenerate tree", true);
+        }
+        setTimeout(() => {
+            if (network) network.fit({ animation: true, duration: 200 });
+        }, 50);
+    }
+    
+    // --------------------------------------------------------------
+    // Merge vis-network canvases to a single data URL
+    // --------------------------------------------------------------
+    function mergeCanvasesToDataURL(containerElement) {
+        return new Promise((resolve, reject) => {
+            try {
+                const canvases = containerElement.querySelectorAll('canvas');
+                if (!canvases || canvases.length === 0) {
+                    reject(new Error("No canvases found, please try again"));
+                    return;
+                }
+                const refCanvas = canvases[0];
+                const width = refCanvas.width;
+                const height = refCanvas.height;
+                if (width === 0 || height === 0) {
+                    reject(new Error("Canvas has zero size, cannot export"));
+                    return;
+                }
+                const mergedCanvas = document.createElement('canvas');
+                mergedCanvas.width = width;
+                mergedCanvas.height = height;
+                const ctx = mergedCanvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error("Cannot get canvas context"));
+                    return;
+                }
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                canvases.forEach(canvas => {
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        try {
+                            ctx.drawImage(canvas, 0, 0, width, height);
+                        } catch (err) {
+                            console.warn("Failed to draw a layer:", err);
+                        }
+                    }
+                });
+                const dataURL = mergedCanvas.toDataURL('image/png');
+                resolve(dataURL);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+    
+    // --------------------------------------------------------------
+    // Export current view as PNG
+    // --------------------------------------------------------------
+    async function exportAsPNG() {
+        if (!network) {
+            showStatusMessage("❌ Network not initialised, generate tree first", true);
+            return;
+        }
+        if (isExporting) {
+            showStatusMessage("⏳ Export already in progress, please wait...");
+            return;
+        }
+        
+        const container = document.getElementById('network');
+        if (!container) return;
+        
+        const statsText = document.getElementById('statsArea').innerText;
+        const nodeMatch = statsText.match(/Nodes:\s*(\d+)/);
+        let nodeCount = 0;
+        if (nodeMatch && nodeMatch[1]) nodeCount = parseInt(nodeMatch[1], 10);
+        if (nodeCount > 1200) {
+            const confirmExport = confirm(`Current tree has ${nodeCount} nodes. Exporting may take a few seconds and produce a large image. Continue?`);
+            if (!confirmExport) return;
+        }
+        
+        isExporting = true;
+        const exportBtn = document.getElementById('exportPngBtn');
+        const originalBtnText = exportBtn.innerHTML;
+        exportBtn.innerHTML = "⏳ Capturing...";
+        exportBtn.disabled = true;
+        
+        showStatusMessage("📸 Fitting full tree and rendering snapshot...");
+        
+        try {
+            network.selectNodes([]);
+            network.fit({ animation: false, scale: 1.0 });
+            await new Promise(resolve => setTimeout(resolve, 280));
+            await new Promise(requestAnimationFrame);
+            await new Promise(resolve => setTimeout(resolve, 60));
+            const dataURL = await mergeCanvasesToDataURL(container);
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+            const modeSuffix = currentDisplayMode === 'mk' ? '_MK' : '_NUM';
+            const filename = `Collatz_tree_depth${currentMaxSteps}${modeSuffix}_${timestamp}.png`;
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataURL;
+            link.click();
+            showStatusMessage(`✅ Exported successfully: ${filename} (${nodeCount} nodes)`, false);
+        } catch (err) {
+            console.error("Export failed:", err);
+            showStatusMessage(`❌ Export failed: ${err.message}`, true);
+        } finally {
+            isExporting = false;
+            exportBtn.innerHTML = originalBtnText;
+            exportBtn.disabled = false;
+            setTimeout(() => {
+                if (!isExporting) showStatusMessage("✅ Export complete, you can now pan/zoom", false);
+            }, 1500);
+        }
+    }
+    
+    // Helper: show status message
+    let statusTimeout = null;
+    function showStatusMessage(msg, isError = false) {
+        const statusDiv = document.getElementById('statusMsg');
+        if (!statusDiv) return;
+        if (statusTimeout) clearTimeout(statusTimeout);
+        statusDiv.innerHTML = isError ? `⚠️ ${msg}` : `✨ ${msg}`;
+        if (isError) {
+            statusTimeout = setTimeout(() => {
+                if (statusDiv.innerHTML.includes(msg)) {
+                    statusDiv.innerHTML = "✅ Ready";
+                }
+            }, 3000);
+        } else {
+            statusTimeout = setTimeout(() => {
+                if (statusDiv.innerHTML === `✨ ${msg}` || statusDiv.innerHTML === `✅ ${msg}`) {
+                    statusDiv.innerHTML = "✅ Ready";
+                }
+            }, 2500);
+        }
+    }
+    
+    // --------------------------------------------------------------
+    // Render the network graph
+    // --------------------------------------------------------------
+    function renderTree(maxSteps) {
+        const container = document.getElementById('network');
+        if (!container) return;
+        
+        const statusMsgDiv = document.getElementById('statusMsg');
+        const statsArea = document.getElementById('statsArea');
+        
+        statusMsgDiv.innerHTML = '⏳ Generating tree... (may take a while for large depths)';
+        statsArea.innerHTML = 'Nodes: — | Edges: —';
+        
+        setTimeout(() => {
+            try {
+                const { nodes, edges, parentMap, stepsMap } = generateCollatzTree(maxSteps);
+                currentParentMap = parentMap;
+                currentStepsMap = stepsMap;
+                currentMaxSteps = maxSteps;
+                
+                const nodeCount = nodes.length;
+                const edgeCount = edges.length;
+                statsArea.innerHTML = `📊 Nodes: ${nodeCount} | Edges: ${edgeCount}`;
+                statusMsgDiv.innerHTML = `✅ Tree generated (depth ${maxSteps}, ${nodeCount} nodes)`;
+                
+                if (nodeCount === 0) {
+                    statusMsgDiv.innerHTML = '⚠️ No nodes generated, increase depth';
+                    return;
+                }
+                
+                if (nodeCount > 1200) {
+                    statusMsgDiv.innerHTML = '⚠️ Many nodes (>1200), interaction may be sluggish, consider reducing depth';
+                }
+                
+                // Set initial labels according to current mode
+                for (let node of nodes) {
+                    if (currentDisplayMode === 'mk') {
+                        node.label = formatNumberToMK(node.id);
+                    } else {
+                        node.label = node.id.toString();
+                    }
+                }
+                
+                const nodesDataSet = new vis.DataSet(nodes);
+                const edgesDataSet = new vis.DataSet(edges);
+                
+                currentNodesDataSet = nodesDataSet;
+                
+                const options = {
+                    autoResize: true,
+                    height: '100%',
+                    width: '100%',
+                    layout: {
+                        hierarchical: {
+                            enabled: true,
+                            direction: 'UD',
+                            sortMethod: 'directed',
+                            nodeSpacing: 130,
+                            levelSeparation: 150,
+                            parentCentralization: true
+                        }
+                    },
+                    physics: { enabled: false, stabilization: false },
+                    interaction: {
+                        hover: true,
+                        tooltipDelay: 200,
+                        zoomView: true,
+                        dragView: true,
+                        navigationButtons: false,
+                        keyboard: true
+                    },
+                    nodes: {
+                        shape: 'dot',
+                        scaling: { label: { enabled: true }, min: 16, max: 32 },
+                        font: { size: 11, face: 'monospace', background: 'rgba(255,255,240,0.8)', strokeWidth: 0 },
+                        borderWidth: 1,
+                        borderWidthSelected: 2,
+                        shadow: false
+                    },
+                    edges: {
+                        arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+                        color: { color: '#94a3b8', highlight: '#f97316', opacity: 0.6 },
+                        smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.3 },
+                        width: 1.5
+                    }
+                };
+                
+                if (network !== null) {
+                    network.destroy();
+                    network = null;
+                }
+                
+                network = new vis.Network(container, { nodes: nodesDataSet, edges: edgesDataSet }, options);
+                
+                network.once('layoutStabilized', function() {
+                    network.fit({ animation: true, duration: 300 });
+                });
+                setTimeout(() => {
+                    if (network) network.fit({ animation: true });
+                }, 200);
+                
+                network.on("click", function(params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        showNodePath(nodeId);
+                    }
+                });
+                
+            } catch (err) {
+                console.error(err);
+                statusMsgDiv.innerHTML = '❌ Generation failed: ' + err.message;
+            }
+        }, 20);
+    }
+    
+    // --------------------------------------------------------------
+    // Show path from node to root 1 (always raw numbers)
+    // --------------------------------------------------------------
+    function showNodePath(nodeId) {
+        if (!currentParentMap || !currentStepsMap) {
+            showStatusMessage("Tree data not ready, please try again", true);
+            return;
+        }
+        if (!currentParentMap.has(nodeId) && nodeId !== 1) {
+            showStatusMessage(`Node ${nodeId} does not exist in the current tree`, true);
+            return;
+        }
+        
+        let path = [];
+        let cur = nodeId;
+        while (cur !== null && cur !== undefined) {
+            path.push(cur);
+            cur = currentParentMap.get(cur);
+            if (cur === null) break;
+        }
+        path.reverse();
+        const stepCount = currentStepsMap.get(nodeId) || (path.length - 1);
+        
+        let pathStr = path.join(" → ");
+        const isLong = pathStr.length > 260;
+        if (isLong) {
+            pathStr = pathStr.slice(0, 240) + "… → " + nodeId;
+        }
+        
+        const infoDiv = document.getElementById('infoPanel');
+        if (infoDiv) {
+            infoDiv.innerHTML = `🔍 <strong>Path details</strong> · Number ${nodeId} to 1<br>
+            📌 Steps: ${stepCount}<br>
+            🧩 Trajectory: ${pathStr}<br>
+            <span style="font-size:0.7rem;">✨ Forward Collatz: odd→3x+1, even→x/2</span>
+            <br><span style="font-size:0.65rem; color:#8b5a2b;">💡 Tip: Toggle (m,k) display on the graph – path always shows raw numbers</span>`;
+            if (network) {
+                network.selectNodes([nodeId]);
+                setTimeout(() => { if(network) network.selectNodes([]); }, 1600);
+            }
+        } else {
+            alert(`Number ${nodeId} → 1 path (${stepCount} steps):\n${pathStr}`);
+        }
+        showStatusMessage(`Displayed path for node ${nodeId} to root`, false);
+    }
+    
+    // --------------------------------------------------------------
+    // UI initialisation
+    // --------------------------------------------------------------
+    function initUI() {
+        const stepInput = document.getElementById('stepInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const exportBtn = document.getElementById('exportPngBtn');
+        const toggleBtn = document.getElementById('toggleDisplayBtn');
+        
+        generateBtn.addEventListener('click', function() {
+            if (isExporting) {
+                showStatusMessage("Export in progress, please wait before generating", true);
+                return;
+            }
+            let rawValue = stepInput.value.trim();
+            let maxSteps = parseInt(rawValue, 10);
+            if (isNaN(maxSteps) || maxSteps < 1) {
+                showStatusMessage('Please enter a valid step count (≥1)', true);
+                return;
+            }
+            if (maxSteps > 12) {
+                if (!confirm(`Depth ${maxSteps} may create >5000 nodes and freeze the browser. Recommended ≤10. Continue anyway?`)) {
+                    stepInput.value = "6";
+                    renderTree(6);
+                    return;
+                }
+            } else if (maxSteps >= 8) {
+                if (!confirm(`Depth ${maxSteps} will generate many nodes (>1500), rendering and export will be slower. Continue?`)) {
+                    stepInput.value = "6";
+                    renderTree(6);
+                    return;
+                }
+            }
+            // Keep the current display mode preference
+            if (currentDisplayMode === 'mk') {
+                if (toggleBtn) toggleBtn.innerHTML = '🔢 Show Numbers';
+            } else {
+                if (toggleBtn) toggleBtn.innerHTML = '🔄 Toggle (m,k) Coordinates';
+            }
+            renderTree(maxSteps);
+        });
+        
+        toggleBtn.addEventListener('click', () => {
+            if (!network || !currentNodesDataSet) {
+                showStatusMessage("Please generate a tree first", true);
+                return;
+            }
+            toggleDisplayMode();
+        });
+        
+        exportBtn.addEventListener('click', () => {
+            if (!network) {
+                showStatusMessage("❌ Please generate a tree first", true);
+                return;
+            }
+            exportAsPNG();
+        });
+        
+        // Initial render with depth 4
+        currentDisplayMode = 'number';
+        if (toggleBtn) toggleBtn.innerHTML = '🔄 Toggle (m,k) Coordinates';
+        renderTree(4);
+        
+        stepInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateBtn.click();
+            }
+        });
+        
+        window.addEventListener('resize', () => {
+            if (network) network.fit();
+        });
+    }
+    
+    window.addEventListener('DOMContentLoaded', initUI);
+</script>
+</body>
+</html>
