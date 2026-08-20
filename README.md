@@ -1,195 +1,236 @@
-# Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer
-An interactive visualizer for the reverse Collatz tree from root 1. Adjustable depth, click nodes to show forward paths. Toggle between raw numbers and (m,k) coordinates (m=floor(n/6), k=n mod 6). Export full graph as HD PNG. Runs client-side.
-# Iterative Properties of Largest Prime Factor Sequences — The 233 Conjecture & the Collatz Conjecture
+# Collatz Reverse Tree Interactive Visualizer
 
-> **IB Mathematics Analysis and Approaches (HL) — Internal Assessment**
+An interactive browser visualizer for the **cycle-pruned reverse Collatz tree** rooted at `1`. It supports adjustable depth, raw-number and `(m,k)` labels, forward-trajectory inspection, and PNG export of the fitted viewport.
 
-An interactive visualization tool and mathematical investigation into the iterative structures of the 233 Conjecture and the Collatz Conjecture, exploring their shared convergence properties through reverse-tree analysis and modular arithmetic isomorphism proofs.
+> **Correctness note:** An earlier version of this README incorrectly claimed that the reverse subtrees rooted at `5` and `32` were isomorphic, described the recurrence below as having a 21-step cycle, and gave an incorrect `(m,k)` formula for an odd predecessor. Those claims are corrected here and covered by automated tests.
 
----
+## What the project does
 
-## Overview
+`Collatz reverse tree.html` builds a breadth-first reverse tree from `1` using the ordinary, unaccelerated Collatz map
 
-This project originated from an observation: the **233 Conjecture** — a lesser-known number-theory conjecture popular in Chinese online communities — bears striking structural similarity to the famous **Collatz Conjecture**, yet uses a simpler single-path iteration without parity-based branching. By studying the easier-to-compute 233 Conjecture first, can we uncover new iterative properties that shed light on the far more complex Collatz Conjecture?
+\[
+C(x)=
+\begin{cases}
+3x+1, & x\text{ odd},\\
+x/2, & x\text{ even}.
+\end{cases}
+\]
 
-### Research Questions
+For a current value `n`, the possible reverse predecessors are:
 
-1. By taking the 233 Conjecture — a number theory conjecture with a simpler, single-path iterative structure that avoids parity-based branching — as our entry point, what previously unexamined iterative properties of the Collatz Conjecture can we identify?
+1. `2n`, which is always valid;
+2. `(n-1)/3`, when it is a positive odd integer.
 
-2. Do the iterative properties identified through this approach carry substantive, meaningful value for advancing the rigorous proof of the Collatz Conjecture?
-
----
-
-## Background
-
-### The Collatz Conjecture
-
-For any positive integer *x*, repeatedly apply:
-
-- If *x* is odd: **f(x) = 3x + 1**
-- If *x* is even: **f(x) = x / 2**
-
-The conjecture states that every positive integer will eventually reach **1**.
-
-### The 233 Conjecture
-
-For any integer *n ≥ 2*, define:
-
-**f(n) = LPF(n) × 10 + (LPF(n) mod 10)**
-
-where `LPF(n)` is the **largest prime factor** of *n*.
-
-The conjecture states that repeated iteration always enters a **21-step cycle** anchored at **233**:
-
-```
-233 → 2333 → 23333 → … → 8577 → 9533 → 233 → …
-```
-
----
-
-## Key Findings
-
-### 1. Convergence Patterns in the 233 Conjecture
-
-By constructing an iterative tree for the 233 Conjecture (primes 2 ≤ n ≤ 50), we observed that:
-
-- All numbers (except 23) converge into two main iterative pathways initiated by **11** and **13**
-- As the target range expands to 10⁹, the probability of entering non-11/13 pathways **first increases (peaking around 10³) then gradually decreases toward zero**
-- New secondary pathways emerge through numbers like 112999, 1311, and 2277
-
-### 2. Reverse Iteration (Backtracking) Equations
-
-Derived the backtracking formula for both conjectures:
-
-**233 Conjecture backtrack:**
-```
-LPF(c) = (a − (a mod 10)) / 10
-```
-where *a* is the current value and *c* is a predecessor.
-
-**Collatz Conjecture backtrack:**
-- **Equation 1 (always valid):** n → **2n**
-- **Equation 2 (conditionally valid):** n → **(n−1) / 3** (only when n ≡ 1 mod 3 and (n−1)/3 is odd)
-
-### 3. Multiples of 3 Have No Odd Predecessors
-
-**Proven:** Any positive integer that is a multiple of 3 has **no odd predecessor** in the Collatz reverse iteration. Its only valid predecessor is the even predecessor 2n.
-
-```
-If n = 3k, then (n−1)/3 = k − 1/3 ∉ ℤ⁺  →  no odd predecessor exists.
-```
-
-### 4. Isomorphism of T5 and T32 Subtrees
-
-**Novel finding:** In the reverse Collatz tree rooted at 1, the node **16** is the first node with two predecessors (32 and 5). The two reverse subtrees rooted at **5** and **32** are **structurally isomorphic** — identical in shape.
-
-**Proof sketch (by induction):**
-- A node *n* **forks** (has two predecessors) **if and only if** n ≡ 4 (mod 6)
-- By induction, all corresponding nodes in T5 and T32 satisfy: **x ≡ f(x) (mod 6)**
-- Therefore, corresponding nodes always fork (or not) simultaneously → identical tree shape
-
-### 5. (m, k) Coordinate System
-
-Introduced a coordinate representation where for any integer n:
-
-```
-m = ⌊n / 6⌋    k = n mod 6
-```
-
-This simplifies tracking how remainders evolve through reverse iteration, revealing patterns in how forking propagates through the tree.
-
----
-
-## Interactive Visualization Tool
-
-This repository includes `Collatz_reverse_tree.html` — a fully interactive web-based visualizer for the Collatz reverse iteration tree.
+The visualizer deliberately omits the reverse edge from `4` to `1`. Without this exception, the reverse structure contains the familiar cycle `1 → 4 → 2 → 1` and is not a rooted tree. The page therefore displays a **cycle-pruned rooted tree**, not the complete reverse directed graph.
 
 ### Features
 
-| Feature | Description |
-|---------|-------------|
-| 🔢 **Adjustable Depth** | Set max steps (1–12) to control tree size |
-| 🔄 **(m,k) Toggle** | Switch between raw number display and (m, k) coordinate mode |
-| 📸 **PNG Export** | Export the full tree as a high-resolution PNG image |
-| 🖱️ **Interactive Navigation** | Scroll to zoom, drag to pan, click nodes for details |
-| 🎨 **Color-coded Levels** | Nodes colored by their distance from root (1) |
+- Generate the cycle-pruned reverse tree to a selected depth.
+- Switch labels between `n` and `(m,k)`, where
+  \[
+  m=\lfloor n/6\rfloor,\qquad k=n\bmod 6.
+  \]
+- Click a node to display its actual forward Collatz trajectory back to `1`.
+- Highlight the nodes and edges in that trajectory.
+- Export the graph after fitting it into the current canvas viewport.
 
-### Usage
+## Mathematical facts used by the visualizer
 
-1. Open `Collatz_reverse_tree.html` in any modern web browser
-2. Adjust the **Max steps** slider and click **Generate / Refresh Tree**
-3. Click **Toggle (m,k) Coordinates** to switch display modes
-4. Click **Export HD PNG** to save a snapshot
-5. Click any node to highlight its path back to the root
+### Odd-predecessor and forking condition
 
-### Technology Stack
+An odd reverse predecessor exists exactly when
 
-- **vis-network** (v9.1.6) — graph visualization library
-- **Vanilla JavaScript** — BFS tree generation, modular arithmetic
-- **HTML5 Canvas** — PNG export via canvas merging
-- **No build step required** — just open the HTML file
+\[
+\frac{n-1}{3}=2q+1
+\]
 
----
+for some non-negative integer `q`. Rearranging gives
 
-## File Structure
+\[
+n=6q+4,
+\]
 
+so, in the complete reverse graph,
+
+\[
+n\text{ has an odd predecessor}\iff n\equiv4\pmod 6.
+\]
+
+Every positive integer also has the even predecessor `2n`. Therefore a node has two reverse predecessors exactly when `n ≡ 4 (mod 6)`.
+
+There is one display-specific exception: at `n=4`, the odd predecessor is `1`, and that edge is omitted to break the root cycle. Thus node `4` has only one displayed child in this cycle-pruned tree.
+
+### Multiples of 3
+
+If `n=3q`, then
+
+\[
+\frac{n-1}{3}=q-\frac13
+\]
+
+is not an integer. A multiple of `3` therefore has no odd reverse predecessor.
+
+### Correct `(m,k)` reverse rules
+
+Write
+
+\[
+n=6m+k,\qquad 0\le k<6.
+\]
+
+For the always-valid even predecessor,
+
+\[
+2n=12m+2k,
+\]
+
+so its coordinates are
+
+\[
+\left(2m+\left\lfloor\frac{k}{3}\right\rfloor,\;2k\bmod6\right).
+\]
+
+An odd predecessor exists only for `k=4`. In that case,
+
+\[
+\frac{n-1}{3}=2m+1.
+\]
+
+Its `(m,k)` coordinates must be computed from the resulting integer:
+
+\[
+\left(
+\left\lfloor\frac{2m+1}{6}\right\rfloor,
+(2m+1)\bmod6
+\right).
+\]
+
+Equivalently, if `m=3q+r` with `r∈{0,1,2}`, the odd predecessor has coordinates
+
+\[
+(q,2r+1).
+\]
+
+For example, `16=6·2+4` has odd predecessor `5`, whose coordinates are `(0,5)`.
+
+## Correction: the subtrees rooted at 5 and 32 are not isomorphic
+
+The earlier README inferred infinite structural isomorphism from a finite-depth visual similarity. That inference was false.
+
+Apply the same reverse-branch word `EEEOEEOEO`, where `E(x)=2x` and `O(x)=(x-1)/3` when valid:
+
+```text
+5  → 10 → 20 → 40 → 13 → 26 → 52  → 17  → 34  → 11
+32 → 64 → 128 → 256 → 85 → 170 → 340 → 113 → 226 → 75
 ```
-├── Collatz_reverse_tree.html   # Interactive reverse Collatz tree visualizer
-├── README.md                   # This file
-└── (IA paper)                  # Full mathematical investigation (separate document)
+
+The corresponding values `11` and `75` are not congruent modulo `6`:
+
+```text
+11 ≡ 5 (mod 6)
+75 ≡ 3 (mod 6)
 ```
 
----
+After one more even reverse step, they become `22` and `150`:
 
-## Mathematical Definitions
-
-### Largest Prime Factor (LPF)
-
-```
-LPF(n) = max { p | p is prime and p | n }
-```
-If *n* is prime, LPF(n) = n.
-
-### Forking Condition
-
-A node *n* in the reverse Collatz tree **forks** (has exactly 2 predecessors) iff:
-
-```
-n ≡ 4 (mod 6)
+```text
+22  ≡ 4 (mod 6)  → has an odd predecessor and forks
+150 ≡ 0 (mod 6)  → has no odd predecessor
 ```
 
-**Sufficiency:** If n = 6k+4, then n−1 = 6k+3 = 3(2k+1), so (n−1)/3 = 2k+1 is an odd integer → odd predecessor exists. Even predecessor 2n always exists.
+Accordingly, the level counts of the two rooted reverse trees first differ at depth 11:
 
-**Necessity:** If n forks, its odd predecessor requires n ≡ 1 (mod 3) and (n−1)/3 odd → (n−1)/3 = 2k+1 → n = 6k+4.
+| Depth from subtree root | `T5` nodes | `T32` nodes |
+|---:|---:|---:|
+| 9 | 9 | 9 |
+| 10 | 12 | 12 |
+| 11 | 15 | 14 |
+| 12 | 19 | 17 |
 
-### (m, k) Backtracking Rules
+This counterexample disproves the former isomorphism claim. It also illustrates why finite visual agreement and modulo-6 observations are insufficient to establish an infinite tree isomorphism.
 
-For a node n = 6t + l:
+## Correction: largest-prime-factor recurrence and the 233 cycle
 
-**No fork (l ≠ 4):** only predecessor is 2n
-- If l < 3: (2t, 2l)
-- If l ≥ 3: (2t + ⌊l/3⌋, 2(l mod 3))
+The associated investigation considered the recurrence
 
-**Fork (l = 4):** two predecessors
-- Even path: 2n → (2t+1, 2)
-- Odd path: (n−1)/3 → (2t+1, 1)
+\[
+F(n)=10\operatorname{LPF}(n)+(\operatorname{LPF}(n)\bmod10),
+\]
 
----
+where `LPF(n)` is the largest prime factor of `n`.
+
+Under this exact definition, the orbit starting at `233` is a **26-state cycle**, not a 21-step cycle:
+
+```text
+233 → 2333 → 23333 → 233333 → 6611 → 6011 → 60111
+→ 66799 → 9977 → 9077 → 3133 → 2411 → 24111 → 477
+→ 533 → 411 → 1377 → 177 → 599 → 5999 → 8577 → 9533
+→ 95333 → 136199 → 194577 → 8211 → 233
+```
+
+In particular, `9533` is prime, so
+
+\[
+F(9533)=10·9533+3=95333,
+\]
+
+not `233`.
+
+This repository verifies the cycle above, but it **does not claim or prove that every starting integer enters this cycle**. Earlier unsupported statements about experiments up to `10^9` and pathway probabilities have been removed because the corresponding data and reproducible analysis were not present in the repository.
+
+## Usage
+
+1. Download or clone the repository.
+2. Open `Collatz reverse tree.html` in a modern browser with internet access. The page currently loads `vis-network` from a version-pinned CDN.
+3. Enter a depth and click **Generate / Refresh Tree**.
+4. Toggle `(m,k)` labels if desired.
+5. Click a node to inspect and highlight its forward trajectory to `1`.
+6. Click **Export PNG (Fitted View)** to save the graph as currently fitted into the canvas.
+
+The depth input is limited to `30`. With the current cycle-pruned generator, depth `8` has `17` nodes, depth `12` has `47` nodes, and depth `27` has `1,748` nodes.
+
+## Automated verification
+
+The mathematical core is in `collatz-math.js`, which is shared by the browser page and the Node.js tests.
+
+Run:
+
+```bash
+node --test tests/collatz-math.test.js
+```
+
+The tests check:
+
+- every generated reverse edge maps back under the forward Collatz rule;
+- the special root-cycle pruning convention;
+- `(m,k)` round trips and the corrected odd-predecessor example;
+- known node counts at selected depths;
+- the explicit counterexample to `T5 ≅ T32`;
+- the complete 26-state cycle under the stated largest-prime-factor recurrence.
+
+## Repository structure
+
+```text
+├── Collatz reverse tree.html   # Interactive visualizer
+├── collatz-math.js             # Shared mathematical core
+├── tests/
+│   └── collatz-math.test.js    # Automated mathematical checks
+└── README.md
+```
+
+## Limitations
+
+- The Collatz conjecture remains unproved; this visualizer is not a proof.
+- The visualizer shows a finite, cycle-pruned tree and cannot justify claims about infinite subtree equivalence from appearance alone.
+- JavaScript `Number` arithmetic is exact only for integers up to `2^53-1`; the UI depth cap keeps the current root-1 tree within that range, but any future extension should preserve explicit safe-integer checks.
+- PNG export captures the fitted canvas viewport; it is not an arbitrarily scalable full-graph renderer.
+- `vis-network` is loaded from the internet, so the page is not yet fully offline.
 
 ## References
 
-[1] Chinese BBS online community discussion (initial encounter with the 233 Conjecture)
+- Lagarias, J. C. (1985). *The 3x + 1 problem and its generalizations*. American Mathematical Monthly, 92(1), 3–23.
+- Andrei, S., & Kudlek, M. *Some results on the Collatz problem*.
 
-[2] Andrei, S., & Kudlek, M. *Some results on the Collatz problem.*
+## Research-integrity note
 
-[3] Lagarias, J. C. *The 3x+1 problem and its generalizations.* American Mathematical Monthly, 92(1), 3-23.
-
----
-
-## License
-
-This project is part of an IB Mathematics Internal Assessment. The visualization tool is provided for educational and research purposes.
-
----
-
-*Built as part of IB Math AA HL Internal Assessment — Iterative Properties of Largest Prime Factor Sequences*
+The purpose of these corrections is to distinguish proven facts, computational observations, disproved conjectures, and open questions. Finding a counterexample to an earlier conjecture is part of the mathematical process and is more informative than retaining a claim contradicted by computation.

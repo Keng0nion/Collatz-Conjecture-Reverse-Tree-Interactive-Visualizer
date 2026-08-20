@@ -6,6 +6,7 @@
     <title>Collatz Reverse Tree – Interactive Visualizer with (m,k) toggle & PNG export</title>
     <!-- vis-network core library -->
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <script type="text/javascript" src="collatz-math.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -192,14 +193,14 @@
     <div class="toolbar">
         <div class="control-group">
             <label>🔢 Max steps (depth):</label>
-            <input type="number" id="stepInput" min="1" max="12" value="4" step="1" style="width: 100px;">
+            <input type="number" id="stepInput" min="1" max="30" value="4" step="1" style="width: 100px;">
             <button id="generateBtn">⟳ Generate / Refresh Tree</button>
         </div>
         <button id="toggleDisplayBtn" class="toggle-btn">🔄 Toggle (m,k) Coordinates</button>
-        <button id="exportPngBtn" class="export-btn">📸 Export HD PNG (Full View)</button>
+        <button id="exportPngBtn" class="export-btn">📸 Export PNG (Fitted View)</button>
         <div class="info-panel" id="infoPanel">
-            📘 <strong>Collatz Reverse Tree</strong> · growing backwards from 1<br>
-            🟢 Click any node to show its path · Switch to (m,k) mode
+            📘 <strong>Cycle-pruned Collatz Reverse Tree</strong> · growing backwards from 1<br>
+            🟢 Click any node to show its forward trajectory to 1 · Switch to (m,k) mode
         </div>
         <div class="stats" id="statsArea">
             Nodes: — | Edges: —
@@ -222,7 +223,7 @@
         </div>
     </div>
     <div class="footer">
-        💡 Reverse rules: predecessors are 2x and (x‑1)/3 (if odd >1) | <span class="warning">⚠️ Depth ≥8 may produce >1500 nodes, export may be slow | Toggle (m,k): for any n, m = floor(n/6), k = n mod 6</span>
+        💡 Reverse rules: predecessors are 2x and (x−1)/3 when the latter is a positive odd integer. The edge 4 → 1 is omitted to break the 1–4–2 cycle. | <span class="warning">⚠️ Depth 27 produces 1,748 nodes in this implementation; deeper trees may render slowly. PNG export captures the fitted viewport. | (m,k): m = floor(n/6), k = n mod 6</span>
     </div>
 </div>
 
@@ -232,42 +233,9 @@
     // Returns { nodes, edges, parentMap, stepsMap }
     // --------------------------------------------------------------
     function generateCollatzTree(maxSteps) {
-        let stepsMap = new Map();   // number -> step count from root 1
-        let parentMap = new Map();  // child -> parent
-        
-        if (maxSteps < 0) return { nodes: [], edges: [], parentMap, stepsMap };
-        
-        stepsMap.set(1, 0);
-        parentMap.set(1, null);
-        let queue = [1];
-        
-        while (queue.length > 0) {
-            let current = queue.shift();
-            let currentStep = stepsMap.get(current);
-            if (currentStep >= maxSteps) continue;
-            
-            let pred1 = 2 * current;
-            let pred2 = null;
-            if ((current - 1) % 3 === 0) {
-                let candidate = (current - 1) / 3;
-                if (candidate % 2 === 1 && candidate !== 1) {
-                    pred2 = candidate;
-                }
-            }
-            
-            [pred1, pred2].forEach(pred => {
-                if (pred === null) return;
-                if (!stepsMap.has(pred)) {
-                    stepsMap.set(pred, currentStep + 1);
-                    parentMap.set(pred, current);
-                    queue.push(pred);
-                } else if (stepsMap.get(pred) > currentStep + 1) {
-                    stepsMap.set(pred, currentStep + 1);
-                    parentMap.set(pred, current);
-                    queue.push(pred);
-                }
-            });
-        }
+        const { stepsMap, parentMap } = CollatzMath.generateReverseTree(1, maxSteps, {
+            pruneRootCycle: true
+        });
         
         let nodes = [];
         let edges = [];
@@ -282,7 +250,7 @@
         for (let [child, parent] of parentMap.entries()) {
             if (parent !== null && nodeSet.has(child) && nodeSet.has(parent)) {
                 if (stepsMap.get(child) <= maxSteps && stepsMap.get(parent) <= maxSteps) {
-                    edges.push({ from: parent, to: child });
+                    edges.push({ id: `${parent}->${child}`, from: parent, to: child });
                 }
             }
         }
@@ -312,8 +280,7 @@
     
     // ---------- Helper: format number as (m,k) ----------
     function formatNumberToMK(n) {
-        const m = Math.floor(n / 6);
-        const k = n % 6;
+        const { m, k } = CollatzMath.toMK(n);
         return `(${m},${k})`;
     }
     
@@ -633,7 +600,7 @@
     }
     
     // --------------------------------------------------------------
-    // Show path from node to root 1 (always raw numbers)
+    // Show the forward Collatz trajectory from the selected node to root 1
     // --------------------------------------------------------------
     function showNodePath(nodeId) {
         if (!currentParentMap || !currentStepsMap) {
@@ -652,30 +619,36 @@
             cur = currentParentMap.get(cur);
             if (cur === null) break;
         }
-        path.reverse();
         const stepCount = currentStepsMap.get(nodeId) || (path.length - 1);
         
         let pathStr = path.join(" → ");
         const isLong = pathStr.length > 260;
         if (isLong) {
-            pathStr = pathStr.slice(0, 240) + "… → " + nodeId;
+            pathStr = pathStr.slice(0, 240) + "… → 1";
         }
         
         const infoDiv = document.getElementById('infoPanel');
         if (infoDiv) {
-            infoDiv.innerHTML = `🔍 <strong>Path details</strong> · Number ${nodeId} to 1<br>
+            infoDiv.innerHTML = `🔍 <strong>Forward Collatz trajectory</strong> · ${nodeId} to 1<br>
             📌 Steps: ${stepCount}<br>
             🧩 Trajectory: ${pathStr}<br>
-            <span style="font-size:0.7rem;">✨ Forward Collatz: odd→3x+1, even→x/2</span>
-            <br><span style="font-size:0.65rem; color:#8b5a2b;">💡 Tip: Toggle (m,k) display on the graph – path always shows raw numbers</span>`;
+            <span style="font-size:0.7rem;">✨ Rule: odd → 3x+1, even → x/2</span>
+            <br><span style="font-size:0.65rem; color:#8b5a2b;">💡 Graph arrows show reverse expansion; this trajectory follows them back toward the root.</span>`;
             if (network) {
-                network.selectNodes([nodeId]);
-                setTimeout(() => { if(network) network.selectNodes([]); }, 1600);
+                const pathEdges = [];
+                for (let index = 0; index < path.length - 1; index += 1) {
+                    pathEdges.push(`${path[index + 1]}->${path[index]}`);
+                }
+                network.setSelection(
+                    { nodes: path, edges: pathEdges },
+                    { unselectAll: true, highlightEdges: false }
+                );
+                setTimeout(() => { if (network) network.unselectAll(); }, 2400);
             }
         } else {
-            alert(`Number ${nodeId} → 1 path (${stepCount} steps):\n${pathStr}`);
+            alert(`Forward Collatz trajectory ${nodeId} → 1 (${stepCount} steps):\n${pathStr}`);
         }
-        showStatusMessage(`Displayed path for node ${nodeId} to root`, false);
+        showStatusMessage(`Displayed forward trajectory for node ${nodeId}`, false);
     }
     
     // --------------------------------------------------------------
@@ -698,16 +671,12 @@
                 showStatusMessage('Please enter a valid step count (≥1)', true);
                 return;
             }
-            if (maxSteps > 12) {
-                if (!confirm(`Depth ${maxSteps} may create >5000 nodes and freeze the browser. Recommended ≤10. Continue anyway?`)) {
-                    stepInput.value = "6";
-                    renderTree(6);
-                    return;
-                }
-            } else if (maxSteps >= 8) {
-                if (!confirm(`Depth ${maxSteps} will generate many nodes (>1500), rendering and export will be slower. Continue?`)) {
-                    stepInput.value = "6";
-                    renderTree(6);
+            if (maxSteps > 30) {
+                showStatusMessage('Please enter a depth from 1 to 30; larger depths are disabled to keep integer arithmetic and rendering manageable', true);
+                return;
+            }
+            if (maxSteps >= 27) {
+                if (!confirm(`Depth 27 produces 1,748 nodes, and deeper values grow quickly. Rendering and export may be slow. Continue with depth ${maxSteps}?`)) {
                     return;
                 }
             }
