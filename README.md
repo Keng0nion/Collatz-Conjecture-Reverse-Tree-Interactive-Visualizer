@@ -1,5 +1,7 @@
 # Collatz Reverse Tree Interactive Visualizer
 
+![Screenshot: the visualizer with a generated reverse Collatz tree](./docs/screenshot.png)
+
 An interactive browser visualizer for the **cycle-pruned reverse Collatz tree** rooted at `1`. It supports adjustable depth, raw-number and `(m,k)` labels, forward-trajectory inspection, and PNG export of the fitted viewport.
 
 > **Correctness note:** An earlier version of this README incorrectly claimed that the reverse subtrees rooted at `5` and `32` were isomorphic, described the recurrence below as having a 21-step cycle, and gave an incorrect `(m,k)` formula for an odd predecessor. Those claims are corrected here and covered by automated tests.
@@ -234,3 +236,7 @@ The tests check:
 ## Research-integrity note
 
 The purpose of these corrections is to distinguish proven facts, computational observations, disproved conjectures, and open questions. Finding a counterexample to an earlier conjecture is part of the mathematical process and is more informative than retaining a claim contradicted by computation.
+
+## Related reading
+
+More projects, write-ups, and experiments live on my personal site: [keng0nion.github.io](https://keng0nion.github.io/).
