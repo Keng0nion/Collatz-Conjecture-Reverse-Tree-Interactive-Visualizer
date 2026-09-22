@@ -1,14 +1,38 @@
-# Collatz Reverse Tree Interactive Visualizer
+**目录：**
 
-![Screenshot: the visualizer with a generated reverse Collatz tree](./docs/screenshot.png)
+- [中文版](README.md)
+- [英文版](README.en.md)
+- [日文版](README.ja.md)
 
-An interactive browser visualizer for the **cycle-pruned reverse Collatz tree** rooted at `1`. It supports adjustable depth, raw-number and `(m,k)` labels, forward-trajectory inspection, and PNG export of the fitted viewport.
+# Collatz 反向树交互可视化
 
-> **Correctness note:** An earlier version of this README incorrectly claimed that the reverse subtrees rooted at `5` and `32` were isomorphic, described the recurrence below as having a 21-step cycle, and gave an incorrect `(m,k)` formula for an odd predecessor. Those claims are corrected here and covered by automated tests.
+![截图：显示所生成的反向科拉茨树的可视化工具](./docs/screenshot.png)
 
-## What the project does
+一个针对以 `1` 为根的**去环反向科拉茨树**（cycle-pruned reverse Collatz tree）的交互式浏览器可视化工具。它支持可调节的深度、原始数值与 `(m,k)` 两种标签、前向轨迹检查，以及将适配后的视口导出为 PNG。
 
-`Collatz reverse tree.html` builds a breadth-first reverse tree from `1` using the ordinary, unaccelerated Collatz map
+> **更正声明：** 本 README 的早期版本错误地声称以 `5` 和 `32` 为根的反向子树是同构的，将下文的递推式描述为具有 21 步循环，并给出了针对奇数前驱的错误 `(m,k)` 公式。这些声明已在此处更正，并有自动化测试覆盖。
+
+## 目录
+
+- [项目做什么](#项目做什么)
+  - [功能](#功能)
+- [可视化使用的数学事实](#可视化使用的数学事实)
+  - [奇数前驱与分叉条件](#奇数前驱与分叉条件)
+  - [3 的倍数](#3-的倍数)
+  - [正确的 `(m,k)` 反向规则](#正确的-mk-反向规则)
+- [更正：以 5 和 32 为根的子树并不同构](#更正以-5-和-32-为根的子树并不同构)
+- [更正：最大质因数递推与 233 循环](#更正最大质因数递推与-233-循环)
+- [使用方法](#使用方法)
+- [自动化验证](#自动化验证)
+- [仓库结构](#仓库结构)
+- [局限性](#局限性)
+- [参考文献](#参考文献)
+- [研究诚信声明](#研究诚信声明)
+- [相关阅读](#相关阅读)
+
+## 项目做什么
+
+`Collatz reverse tree.html` 使用普通的、未加速的科拉茨映射，从 `1` 构建广度优先的反向树：
 
 \[
 C(x)=
@@ -18,87 +42,87 @@ x/2, & x\text{ even}.
 \end{cases}
 \]
 
-For a current value `n`, the possible reverse predecessors are:
+对于当前值 `n`，可能的反向前驱有：
 
-1. `2n`, which is always valid;
-2. `(n-1)/3`, when it is a positive odd integer.
+1. `2n`，它总是有效；
+2. `(n-1)/3`，当它是正奇数时。
 
-The visualizer deliberately omits the reverse edge from `4` to `1`. Without this exception, the reverse structure contains the familiar cycle `1 → 4 → 2 → 1` and is not a rooted tree. The page therefore displays a **cycle-pruned rooted tree**, not the complete reverse directed graph.
+可视化工具刻意省略了从 `4` 到 `1` 的反向边。如果没有这个例外，反向结构将包含大家熟悉的循环 `1 → 4 → 2 → 1`，从而不是有根树。因此，该页面显示的是**去环的有根树**，而不是完整的反向有向图。
 
-### Features
+### 功能
 
-- Generate the cycle-pruned reverse tree to a selected depth.
-- Switch labels between `n` and `(m,k)`, where
+- 生成到所选深度的去环反向树。
+- 在 `n` 和 `(m,k)` 标签之间切换，其中
   \[
   m=\lfloor n/6\rfloor,\qquad k=n\bmod 6.
   \]
-- Click a node to display its actual forward Collatz trajectory back to `1`.
-- Highlight the nodes and edges in that trajectory.
-- Export the graph after fitting it into the current canvas viewport.
+- 点击节点以显示其返回到 `1` 的实际前向科拉茨轨迹。
+- 高亮该轨迹中的节点和边。
+- 将图适配到当前画布视口后导出。
 
-## Mathematical facts used by the visualizer
+## 可视化使用的数学事实
 
-### Odd-predecessor and forking condition
+### 奇数前驱与分叉条件
 
-An odd reverse predecessor exists exactly when
+当且仅当存在非负整数 `q` 使得
 
 \[
 \frac{n-1}{3}=2q+1
 \]
 
-for some non-negative integer `q`. Rearranging gives
+时，奇数反向前驱才存在。整理得
 
 \[
 n=6q+4,
 \]
 
-so, in the complete reverse graph,
+因此，在完整的反向图中，
 
 \[
 n\text{ has an odd predecessor}\iff n\equiv4\pmod 6.
 \]
 
-Every positive integer also has the even predecessor `2n`. Therefore a node has two reverse predecessors exactly when `n ≡ 4 (mod 6)`.
+每个正整数也都有偶数前驱 `2n`。因此，当且仅当 `n ≡ 4 (mod 6)` 时，节点才有两个反向前驱。
 
-There is one display-specific exception: at `n=4`, the odd predecessor is `1`, and that edge is omitted to break the root cycle. Thus node `4` has only one displayed child in this cycle-pruned tree.
+存在一个与显示相关的例外：在 `n=4` 处，奇数前驱是 `1`，为打断根循环，该边被省略。因此，在这棵去环树中，节点 `4` 只有一个显示出来的子节点。
 
-### Multiples of 3
+### 3 的倍数
 
-If `n=3q`, then
+若 `n=3q`，则
 
 \[
 \frac{n-1}{3}=q-\frac13
 \]
 
-is not an integer. A multiple of `3` therefore has no odd reverse predecessor.
+不是整数。因此，`3` 的倍数没有奇数反向前驱。
 
-### Correct `(m,k)` reverse rules
+### 正确的 `(m,k)` 反向规则
 
-Write
+记
 
 \[
 n=6m+k,\qquad 0\le k<6.
 \]
 
-For the always-valid even predecessor,
+对于总是有效的偶数前驱，
 
 \[
 2n=12m+2k,
 \]
 
-so its coordinates are
+因此其坐标为
 
 \[
 \left(2m+\left\lfloor\frac{k}{3}\right\rfloor,\;2k\bmod6\right).
 \]
 
-An odd predecessor exists only for `k=4`. In that case,
+奇数前驱仅当 `k=4` 时存在。此时，
 
 \[
 \frac{n-1}{3}=2m+1.
 \]
 
-Its `(m,k)` coordinates must be computed from the resulting integer:
+其 `(m,k)` 坐标必须由所得的整数计算：
 
 \[
 \left(
@@ -107,61 +131,61 @@ Its `(m,k)` coordinates must be computed from the resulting integer:
 \right).
 \]
 
-Equivalently, if `m=3q+r` with `r∈{0,1,2}`, the odd predecessor has coordinates
+等价地，若 `m=3q+r`（`r∈{0,1,2}`），则奇数前驱的坐标为
 
 \[
 (q,2r+1).
 \]
 
-For example, `16=6·2+4` has odd predecessor `5`, whose coordinates are `(0,5)`.
+例如，`16=6·2+4` 的奇数前驱是 `5`，其坐标为 `(0,5)`。
 
-## Correction: the subtrees rooted at 5 and 32 are not isomorphic
+## 更正：以 5 和 32 为根的子树并不同构
 
-The earlier README inferred infinite structural isomorphism from a finite-depth visual similarity. That inference was false.
+早期版本的 README 从有限深度的视觉相似性推断出无限的结构同构。那个推断是错误的。
 
-Apply the same reverse-branch word `EEEOEEOEO`, where `E(x)=2x` and `O(x)=(x-1)/3` when valid:
+应用相同的反向分支词 `EEEOEEOEO`，其中 `E(x)=2x`，`O(x)=(x-1)/3`（有效时）：
 
 ```text
 5  → 10 → 20 → 40 → 13 → 26 → 52  → 17  → 34  → 11
 32 → 64 → 128 → 256 → 85 → 170 → 340 → 113 → 226 → 75
 ```
 
-The corresponding values `11` and `75` are not congruent modulo `6`:
+对应的值 `11` 和 `75` 模 `6` 不同余：
 
 ```text
 11 ≡ 5 (mod 6)
 75 ≡ 3 (mod 6)
 ```
 
-After one more even reverse step, they become `22` and `150`:
+再经过一次偶数反向步骤后，它们变为 `22` 和 `150`：
 
 ```text
-22  ≡ 4 (mod 6)  → has an odd predecessor and forks
-150 ≡ 0 (mod 6)  → has no odd predecessor
+22  ≡ 4 (mod 6)  → 有奇数前驱并分叉
+150 ≡ 0 (mod 6)  → 没有奇数前驱
 ```
 
-Accordingly, the level counts of the two rooted reverse trees first differ at depth 11:
+因此，两棵有根反向树的层级计数首次在深度 11 处出现差异：
 
-| Depth from subtree root | `T5` nodes | `T32` nodes |
+| 距子树根的深度 | `T5` 节点数 | `T32` 节点数 |
 |---:|---:|---:|
 | 9 | 9 | 9 |
 | 10 | 12 | 12 |
 | 11 | 15 | 14 |
 | 12 | 19 | 17 |
 
-This counterexample disproves the former isomorphism claim. It also illustrates why finite visual agreement and modulo-6 observations are insufficient to establish an infinite tree isomorphism.
+这个反例推翻了之前的同构声明。它也说明了为什么有限的视觉一致性以及模 6 的观察不足以确立无限树同构。
 
-## Correction: largest-prime-factor recurrence and the 233 cycle
+## 更正：最大质因数递推与 233 循环
 
-The associated investigation considered the recurrence
+相关研究考察了如下递推式：
 
 \[
 F(n)=10\operatorname{LPF}(n)+(\operatorname{LPF}(n)\bmod10),
 \]
 
-where `LPF(n)` is the largest prime factor of `n`.
+其中 `LPF(n)` 是 `n` 的最大质因数。
 
-Under this exact definition, the orbit starting at `233` is a **26-state cycle**, not a 21-step cycle:
+在这个精确定义下，从 `233` 出发的轨道是一个 **26 状态循环**，而不是 21 步循环：
 
 ```text
 233 → 2333 → 23333 → 233333 → 6611 → 6011 → 60111
@@ -170,73 +194,73 @@ Under this exact definition, the orbit starting at `233` is a **26-state cycle**
 → 95333 → 136199 → 194577 → 8211 → 233
 ```
 
-In particular, `9533` is prime, so
+特别地，`9533` 是素数，因此
 
 \[
 F(9533)=10·9533+3=95333,
 \]
 
-not `233`.
+而不是 `233`。
 
-This repository verifies the cycle above, but it **does not claim or prove that every starting integer enters this cycle**. Earlier unsupported statements about experiments up to `10^9` and pathway probabilities have been removed because the corresponding data and reproducible analysis were not present in the repository.
+本仓库验证了上述循环，但**不声明也不证明每个起始整数都会进入该循环**。此前关于 `10^9` 以内实验和路径概率的缺乏依据的声明已被移除，因为相应的数据和可复现的分析并不存在于仓库中。
 
-## Usage
+## 使用方法
 
-1. Download or clone the repository.
-2. Open `Collatz reverse tree.html` in a modern browser with internet access. The page currently loads `vis-network` from a version-pinned CDN.
-3. Enter a depth and click **Generate / Refresh Tree**.
-4. Toggle `(m,k)` labels if desired.
-5. Click a node to inspect and highlight its forward trajectory to `1`.
-6. Click **Export PNG (Fitted View)** to save the graph as currently fitted into the canvas.
+1. 下载或克隆本仓库。
+2. 在可访问互联网的现代浏览器中打开 `Collatz reverse tree.html`。该页面目前从固定版本的 CDN 加载 `vis-network`。
+3. 输入深度并点击 **Generate / Refresh Tree**。
+4. 如有需要，切换 `(m,k)` 标签。
+5. 点击节点以检查并高亮其到 `1` 的前向轨迹。
+6. 点击 **Export PNG (Fitted View)**，保存当前适配到画布中的图。
 
-The depth input is limited to `30`. With the current cycle-pruned generator, depth `8` has `17` nodes, depth `12` has `47` nodes, and depth `27` has `1,748` nodes.
+深度输入限制为 `30`。使用当前的去环生成器，深度 `8` 有 `17` 个节点，深度 `12` 有 `47` 个节点，深度 `27` 有 `1,748` 个节点。
 
-## Automated verification
+## 自动化验证
 
-The mathematical core is in `collatz-math.js`, which is shared by the browser page and the Node.js tests.
+数学核心位于 `collatz-math.js`，由浏览器页面和 Node.js 测试共享。
 
-Run:
+运行：
 
 ```bash
 node --test tests/collatz-math.test.js
 ```
 
-The tests check:
+测试检查：
 
-- every generated reverse edge maps back under the forward Collatz rule;
-- the special root-cycle pruning convention;
-- `(m,k)` round trips and the corrected odd-predecessor example;
-- known node counts at selected depths;
-- the explicit counterexample to `T5 ≅ T32`;
-- the complete 26-state cycle under the stated largest-prime-factor recurrence.
+- 每条生成的反向边在前向科拉茨规则下都能映射回去；
+- 去除根循环的特殊约定；
+- `(m,k)` 往返以及更正后的奇数前驱示例；
+- 所选深度处的已知节点数；
+- 针对 `T5 ≅ T32` 的显式反例；
+- 所述最大质因数递推下的完整 26 状态循环。
 
-## Repository structure
+## 仓库结构
 
 ```text
-├── Collatz reverse tree.html   # Interactive visualizer
-├── collatz-math.js             # Shared mathematical core
+├── Collatz reverse tree.html   # 交互式可视化工具
+├── collatz-math.js             # 共享的数学核心
 ├── tests/
-│   └── collatz-math.test.js    # Automated mathematical checks
+│   └── collatz-math.test.js    # 自动化数学检查
 └── README.md
 ```
 
-## Limitations
+## 局限性
 
-- The Collatz conjecture remains unproved; this visualizer is not a proof.
-- The visualizer shows a finite, cycle-pruned tree and cannot justify claims about infinite subtree equivalence from appearance alone.
-- JavaScript `Number` arithmetic is exact only for integers up to `2^53-1`; the UI depth cap keeps the current root-1 tree within that range, but any future extension should preserve explicit safe-integer checks.
-- PNG export captures the fitted canvas viewport; it is not an arbitrarily scalable full-graph renderer.
-- `vis-network` is loaded from the internet, so the page is not yet fully offline.
+- 科拉茨猜想仍未被证明；该可视化工具不是一个证明。
+- 可视化工具显示的是有限的、去环后的树，不能仅凭外观为关于无限子树等价性的声明提供依据。
+- JavaScript 的 `Number` 运算仅对不超过 `2^53-1` 的整数才是精确的；UI 的深度上限使当前以 1 为根的树保持在该范围内，但任何未来的扩展都应保留显式的安全整数检查。
+- PNG 导出捕获的是适配后的画布视口；它不是可任意缩放的完整图渲染器。
+- `vis-network` 从互联网加载，因此该页面尚不能完全离线使用。
 
-## References
+## 参考文献
 
 - Lagarias, J. C. (1985). *The 3x + 1 problem and its generalizations*. American Mathematical Monthly, 92(1), 3–23.
 - Andrei, S., & Kudlek, M. *Some results on the Collatz problem*.
 
-## Research-integrity note
+## 研究诚信声明
 
-The purpose of these corrections is to distinguish proven facts, computational observations, disproved conjectures, and open questions. Finding a counterexample to an earlier conjecture is part of the mathematical process and is more informative than retaining a claim contradicted by computation.
+这些更正的目的在于区分已证明的事实、计算观察、被推翻的猜想和开放问题。为早期的猜想找到反例是数学过程的一部分，比保留一个被计算反驳的声明更有参考价值。
 
-## Related reading
+## 相关阅读
 
-More projects, write-ups, and experiments live on my personal site: [keng0nion.github.io](https://keng0nion.github.io/).
+更多项目、文章和实验见我的个人网站：[keng0nion.github.io](https://keng0nion.github.io/)。
