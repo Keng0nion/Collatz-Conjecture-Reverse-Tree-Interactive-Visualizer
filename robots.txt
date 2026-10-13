@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://keng0nion.github.io/Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer/sitemap.xml
