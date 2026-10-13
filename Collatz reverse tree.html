@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Collatz Reverse Tree – Interactive Visualizer with (m,k) toggle & PNG export</title>
+    <meta name="description" content="Explore the cycle-pruned reverse Collatz tree in your browser: adjust depth, click any node to trace its forward trajectory to 1, switch between integer and (m,k) coordinates, and export the fitted view as PNG.">
+    <link rel="canonical" href="https://keng0nion.github.io/Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer/Collatz%20reverse%20tree.html">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Collatz Reverse Tree – Interactive Visualizer with (m,k) toggle &amp; PNG export">
+    <meta property="og:description" content="Explore the cycle-pruned reverse Collatz tree in your browser: adjust depth, click any node to trace its forward trajectory to 1, switch between integer and (m,k) coordinates, and export the fitted view as PNG.">
+    <meta property="og:url" content="https://keng0nion.github.io/Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer/Collatz%20reverse%20tree.html">
+    <meta property="og:image" content="https://keng0nion.github.io/Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer/docs/screenshot.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Collatz Reverse Tree Visualizer",
+      "url": "https://keng0nion.github.io/Collatz-Conjecture-Reverse-Tree-Interactive-Visualizer/Collatz%20reverse%20tree.html",
+      "description": "An interactive browser visualizer for the cycle-pruned reverse Collatz tree, with adjustable depth, forward-trajectory highlighting, (m,k) coordinate labels, and PNG export.",
+      "applicationCategory": "EducationalApplication",
+      "isAccessibleForFree": true,
+      "inLanguage": "en"
+    }
+    </script>
     <!-- vis-network core library -->
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.6/dist/vis-network.min.js"></script>
     <script type="text/javascript" src="collatz-math.js"></script>
@@ -100,6 +120,13 @@
             max-width: 380px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
             flex-shrink: 1;
+        }
+        .info-panel h1 {
+            display: inline;
+            margin: 0;
+            font-size: 1em;
+            font-weight: 700;
+            color: #e67e22;
         }
         .info-panel strong {
             color: #e67e22;
@@ -199,7 +226,7 @@
         <button id="toggleDisplayBtn" class="toggle-btn">🔄 Toggle (m,k) Coordinates</button>
         <button id="exportPngBtn" class="export-btn">📸 Export PNG (Fitted View)</button>
         <div class="info-panel" id="infoPanel">
-            📘 <strong>Cycle-pruned Collatz Reverse Tree</strong> · growing backwards from 1<br>
+            📘 <h1>Cycle-pruned Collatz Reverse Tree</h1> · growing backwards from 1<br>
             🟢 Click any node to show its forward trajectory to 1 · Switch to (m,k) mode
         </div>
         <div class="stats" id="statsArea">
